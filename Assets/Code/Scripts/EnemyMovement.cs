@@ -32,7 +32,7 @@ public class EnemyMovement : MonoBehaviour
             // check BEFORE indexing
             if (!SetTargetFromPathIndex())
             {
-                // reached end of path
+                EnemySpawner.onEnemyDestroy.Invoke();
                 Destroy(gameObject);
                 return;
             }

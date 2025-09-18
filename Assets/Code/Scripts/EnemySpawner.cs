@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
 
 public class EnemySpawner : MonoBehaviour
 {
@@ -12,6 +14,9 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private float enemiesPerSecond = 0.5f;
     [SerializeField] private float timeBetweenWaves = 5f;
     [SerializeField] private float difficultyScalingFactor = 0.75f;
+
+    [Header("Events")]
+    public static UnityEvent onEnemyDestroy = new UnityEvent();
     private int currentWave = 1;
     private float timeSinceLastSpawn = 0;
     private int enemiesAlive;
@@ -19,9 +24,14 @@ public class EnemySpawner : MonoBehaviour
 
     private bool isSpawning = false;
 
+    private void Awake()
+    {
+        onEnemyDestroy.AddListener(EnemyDestroyed);
+    }
+
     private void Start()
     {
-        StartWave();
+        StartCoroutine(StartWave());
     }
 
     private void Update()
@@ -35,12 +45,18 @@ public class EnemySpawner : MonoBehaviour
             enemiesLeftToSpawn--;
             enemiesAlive++;
             timeSinceLastSpawn = 0f;
-            
+
+        }
+        
+        if(enemiesAlive == 0 && enemiesLeftToSpawn == 0)
+        {
+            EndWave();
         }
     }
     // Start is called before the first frame update
-    private void StartWave()
+    private IEnumerator StartWave()
     {
+        yield return new WaitForSeconds(timeBetweenWaves);
         isSpawning = true;
         enemiesLeftToSpawn = EnemiesPerWave();
 
@@ -51,10 +67,23 @@ public class EnemySpawner : MonoBehaviour
         GameObject prefatToSpawn = enemyPrefabs[0];
         Instantiate(prefatToSpawn, LevelManager.main.startPoint.position, Quaternion.identity);
     }
-    
+
     private int EnemiesPerWave()
     {
         return Mathf.RoundToInt(baseEnemies * Mathf.Pow(currentWave, difficultyScalingFactor));
+    }
+
+    private void EnemyDestroyed()
+    {
+        enemiesAlive--;
+    }
+    
+    private void EndWave()
+    {
+        currentWave++;
+        isSpawning = false;
+        timeSinceLastSpawn = 0f;
+        StartCoroutine(StartWave());
     }
 
     // Update is called once per frame
